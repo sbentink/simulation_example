@@ -1,0 +1,10 @@
+simulation:
+  seed: 7342
+  n_obs: 1000
+  rho: 0.6
+equivalence:
+  sd_multiplier: 3
+  alpha: 0.05
+files:
+  data: data/sim_data_2026-10-30_seed7342.csv
+  results: results/results_2026-10-30_seed7342.csv
