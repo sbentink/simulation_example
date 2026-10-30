@@ -1,31 +1,48 @@
-# Calculations: read simulated data and run the paired equivalence test
+# Calculations: read data from a run folder, write results alongside it
 
 library(yaml)
 
-source("R/functions.R")
+source(if (file.exists("R/paths.R")) "R/paths.R" else "simulation_example/R/paths.R")
+root <- project_root()
+source(file.path(root, "R", "functions.R"))
 
-params_file <- "config/params.yml"
-params <- read_yaml(params_file)
+# run_dir defaults to the latest run for the current simulation parameters.
+# Existing results are not replaced unless overwrite = TRUE.
+run_calculations <- function(root, run_dir = NULL, overwrite = FALSE) {
+  params <- read_yaml(file.path(root, "config", "params.yml"))
+  if (is.null(run_dir)) run_dir <- latest_run_dir(root, params)
 
-data <- read.csv(params$files$data)
+  # The data must come from the simulation settings currently in the config
+  snapshot <- read_yaml(file.path(run_dir, "params.yml"))
+  if (!identical(snapshot$simulation, params$simulation)) {
+    stop("Simulation parameters in config/params.yml differ from those in ",
+         run_dir, "/params.yml. Re-run the simulation or pass another run_dir.")
+  }
 
-# Sanity checks: correlation near rho, means near 0, SDs near 1
-cor(data$x, data$y)
-colMeans(data)
-apply(data, 2, sd)
+  results_file <- file.path(run_dir, run_file("results", params))
+  if (file.exists(results_file) && !overwrite) {
+    stop(results_file, " already exists. Use overwrite = TRUE to replace it.")
+  }
 
-results <- paired_tost(
-  data$x, data$y,
-  sd_multiplier = params$equivalence$sd_multiplier,
-  alpha = params$equivalence$alpha
-)
+  data_file <- file.path(run_dir, run_file("sim_data", params))
+  message("Reading ", data_file)
+  data <- read.csv(data_file)
 
-results_file <- sub("sim_data_", "results_", params$files$data)
-results_file <- sub("^data/", "results/", results_file)
-dir.create("results", showWarnings = FALSE)
-write.csv(results, results_file, row.names = FALSE)
+  # Sanity checks: correlation near rho, means near 0, SDs near 1
+  print(cor(data$x, data$y))
+  print(colMeans(data))
+  print(apply(data, 2, sd))
 
-params$files$results <- results_file
-write_yaml(params, params_file)
+  results <- paired_tost(
+    data$x, data$y,
+    sd_multiplier = params$equivalence$sd_multiplier,
+    alpha = params$equivalence$alpha
+  )
 
-results
+  write.csv(results, results_file, row.names = FALSE)
+  # Equivalence settings used for these results
+  write_yaml(params$equivalence, file.path(run_dir, "params_equivalence.yml"))
+
+  message("Wrote ", results_file)
+  results
+}
