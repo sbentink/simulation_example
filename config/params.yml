@@ -1,8 +1,0 @@
-# Static inputs. Output filenames are derived from these in R/paths.R
-simulation:
-  seed: 7342
-  n_obs: 1000
-  rho: 0.6
-equivalence:
-  sd_multiplier: 3   # bounds = +/- multiplier * SD of paired differences
-  alpha: 0.05

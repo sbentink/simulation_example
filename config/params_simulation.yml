@@ -1,0 +1,4 @@
+# Inputs for the data simulation
+seed: 7342
+n_obs: 1000
+rho: 0.6

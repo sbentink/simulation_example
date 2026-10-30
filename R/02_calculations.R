@@ -9,22 +9,23 @@ source(file.path(root, "R", "functions.R"))
 # run_dir defaults to the latest run for the current simulation parameters.
 # Existing results are not replaced unless overwrite = TRUE.
 run_calculations <- function(root, run_dir = NULL, overwrite = FALSE) {
-  params <- read_yaml(file.path(root, "config", "params.yml"))
-  if (is.null(run_dir)) run_dir <- latest_run_dir(root, params)
+  params_sim <- read_yaml(file.path(root, "config", "params_simulation.yml"))
+  params_eq <- read_yaml(file.path(root, "config", "params_equivalence.yml"))
+  if (is.null(run_dir)) run_dir <- latest_run_dir(root, params_sim)
 
   # The data must come from the simulation settings currently in the config
-  snapshot <- read_yaml(file.path(run_dir, "params.yml"))
-  if (!identical(snapshot$simulation, params$simulation)) {
-    stop("Simulation parameters in config/params.yml differ from those in ",
-         run_dir, "/params.yml. Re-run the simulation or pass another run_dir.")
+  snapshot <- read_yaml(file.path(run_dir, "params_simulation.yml"))
+  if (!identical(snapshot, params_sim)) {
+    stop("config/params_simulation.yml differs from ", run_dir,
+         "/params_simulation.yml. Re-run the simulation or pass another run_dir.")
   }
 
-  results_file <- file.path(run_dir, run_file("results", params))
+  results_file <- file.path(run_dir, run_file("results", params_sim))
   if (file.exists(results_file) && !overwrite) {
     stop(results_file, " already exists. Use overwrite = TRUE to replace it.")
   }
 
-  data_file <- file.path(run_dir, run_file("sim_data", params))
+  data_file <- file.path(run_dir, run_file("sim_data", params_sim))
   message("Reading ", data_file)
   data <- read.csv(data_file)
 
@@ -35,13 +36,13 @@ run_calculations <- function(root, run_dir = NULL, overwrite = FALSE) {
 
   results <- paired_tost(
     data$x, data$y,
-    sd_multiplier = params$equivalence$sd_multiplier,
-    alpha = params$equivalence$alpha
+    sd_multiplier = params_eq$sd_multiplier,
+    alpha = params_eq$alpha
   )
 
   write.csv(results, results_file, row.names = FALSE)
   # Equivalence settings used for these results
-  write_yaml(params$equivalence, file.path(run_dir, "params_equivalence.yml"))
+  write_yaml(params_eq, file.path(run_dir, "params_equivalence.yml"))
 
   message("Wrote ", results_file)
   results

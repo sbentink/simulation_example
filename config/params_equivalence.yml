@@ -1,0 +1,3 @@
+# Inputs for the paired equivalence test
+sd_multiplier: 3   # bounds = +/- multiplier * SD of paired differences
+alpha: 0.05
